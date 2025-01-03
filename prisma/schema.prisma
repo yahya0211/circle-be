@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Test {
+  id   Int    @id @default(autoincrement())
+  test String
+}
+
+model User {
+  id            String          @id @default(uuid())
+  fullname      String
+  email         String          @unique
+  password      String
+  username      String          @unique
+  threads       Thread[]
+  followers     Follow[]        @relation("followers")
+  following     Follow[]        @relation("following")
+  resetPassword ResetPassword[]
+  like          Like[]
+  profile       Profile?
+}
+
+model ResetPassword {
+  id                 String   @id @default(uuid())
+  tokenPassword      String
+  passwordResetToken String
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  expiresAt          DateTime
+}
+
+model Thread {
+  id       String        @id @default(uuid())
+  content  String
+  userId   String
+  threadId String?
+  author   User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  image    ThreadImage[]
+  like     Like[]
+  parent   Thread?       @relation("replies", fields: [threadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  replies  Thread[]      @relation("replies")
+}
+
+model ThreadImage {
+  id       String @id @default(uuid())
+  url      String
+  threadId String
+  thread   Thread @relation(fields: [threadId], references: [id])
+}
+
+model Follow {
+  followers   User   @relation("followers", fields: [followerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  followerId  String
+  following   User   @relation("following", fields: [followingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  followingId String
+
+  @@id([followingId, followerId])
+}
+
+model Like {
+  userId   String
+  threadId String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  thread   Thread @relation(fields: [threadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([userId, threadId])
+}
+
+model Profile {
+  id     String  @id @default(uuid())
+  userId String  @unique
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  avatar String?
+  cover  String?
+  bio    String?
+}
